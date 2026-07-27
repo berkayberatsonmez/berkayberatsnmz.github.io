@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Conveyor Sort — Color Sorting Puzzle Game | Support</title>
+<meta name="description" content="Conveyor Sort: sort colorful packages by color as they flow down a conveyor belt. Daily puzzles, special packages, plays offline. Official support & info page." />
+<meta property="og:title" content="Conveyor Sort — Color Sorting Puzzle" />
+<meta property="og:description" content="Sort colorful packages by color on a moving conveyor belt. Daily puzzles, special packages, offline play." />
+<meta property="og:type" content="website" />
+<style>
+  :root {
+    --sky-1: #dff0ff;
+    --sky-2: #f4fbff;
+    --card: #ffffff;
+    --ink: #1f2a37;
+    --muted: #5b6b7b;
+    --line: #e6eef5;
+    --gold: #f5c21a;
+    --gold-deep: #d99b0a;
+    --red: #e74c3c;
+    --blue: #3498db;
+    --green: #2ecc71;
+    --orange: #f39c12;
+    --purple: #9b59b6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 40%, #ffffff 100%);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  /* colorful package strip (brand element) */
+  .belt { display: flex; gap: 8px; justify-content: center; margin: 8px 0 28px; }
+  .pkg {
+    width: 34px; height: 34px; border-radius: 8px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.12), inset 0 0 0 2px rgba(255,255,255,0.35);
+    position: relative;
+  }
+  .pkg::after { /* tape */
+    content: ""; position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 7px; transform: translateX(-50%); background: rgba(247,239,220,0.85);
+  }
+  .pkg.red{background:var(--red)} .pkg.blue{background:var(--blue)}
+  .pkg.green{background:var(--green)} .pkg.orange{background:var(--orange)}
+  .pkg.purple{background:var(--purple)}
+  .pkg.gold{background:linear-gradient(180deg,#ffe45c,#f5c21a)}
+  .pkg.gold::before { /* joker star */
+    content: "★"; position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center; color: #fffdf3;
+    font-size: 19px; text-shadow: 0 1px 0 var(--gold-deep); z-index: 1;
+  }
+
+  header.hero { text-align: center; padding: 8px 0 4px; }
+  .hero h1 { font-size: 2.1rem; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .hero .tag { color: var(--muted); font-size: 1.08rem; max-width: 30rem; margin: 0 auto; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 24px; margin-top: 22px;
+    box-shadow: 0 8px 26px rgba(31,42,55,0.06);
+  }
+  h2 { font-size: 1.25rem; margin-bottom: 12px; }
+  p { margin-bottom: 12px; }
+  ul { margin: 4px 0 4px 2px; list-style: none; }
+  li { padding: 8px 0 8px 30px; position: relative; border-bottom: 1px solid var(--line); }
+  li:last-child { border-bottom: 0; }
+  li::before {
+    content: ""; position: absolute; left: 4px; top: 15px;
+    width: 12px; height: 12px; border-radius: 3px; background: var(--gold);
+  }
+  li.c1::before{background:var(--red)} li.c2::before{background:var(--blue)}
+  li.c3::before{background:var(--green)} li.c4::before{background:var(--orange)}
+  li b { color: var(--ink); }
+
+  a { color: #1f7ac4; text-decoration: none; font-weight: 600; }
+  a:hover { text-decoration: underline; }
+
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+  .btn {
+    display: inline-block; padding: 12px 20px; border-radius: 10px;
+    font-weight: 700; border: 1px solid var(--line); background: #fff; color: var(--ink);
+  }
+  .btn.mail { background: var(--gold); border-color: var(--gold-deep); color: #3a2c00; }
+  .store-note {
+    margin-top: 14px; padding: 12px 16px; border-radius: 10px;
+    background: #f1f7fc; border: 1px dashed #bcd6ec; color: var(--muted); font-size: 0.95rem;
+  }
+  footer { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 32px; }
+  footer a { color: var(--muted); }
+  .dot { margin: 0 8px; opacity: 0.5; }
+  @media (max-width: 480px) { .hero h1 { font-size: 1.7rem; } .card { padding: 20px 18px; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="belt" aria-hidden="true">
+      <span class="pkg red"></span><span class="pkg blue"></span>
+      <span class="pkg gold"></span><span class="pkg green"></span>
+      <span class="pkg orange"></span><span class="pkg purple"></span>
+    </div>
+
+    <header class="hero">
+      <h1>Conveyor Sort</h1>
+      <p class="tag">Sort colorful packages by color as they flow down a moving conveyor belt. Fill a bin with three of the same color to seal it — but don't let packages slip off the end!</p>
+    </header>
+
+    <section class="card">
+      <h2>Features</h2>
+      <ul>
+        <li class="c1"><b>Daily Puzzle</b> — a new hand-crafted challenge every day, with a streak to keep alive.</li>
+        <li class="c2"><b>Special packages</b> — golden Jokers that fit any bin, wrapped mystery packages, and ticking Bombs.</li>
+        <li class="c3"><b>Plays offline</b> — no account, no login, no internet required to play.</li>
+        <li class="c4"><b>Free with optional ads</b> — watch-to-earn rewards are entirely optional.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Support &amp; Contact</h2>
+      <p>Questions, feedback, or a bug to report? We'd love to hear from you.</p>
+      <div class="btn-row">
+        <a class="btn mail" href="mailto:contactruyatabiri@gmail.com">contactruyatabiri@gmail.com</a>
+      </div>
+      <div class="store-note">📱 Coming soon to the App Store — the download link will appear here once the app is live.</div>
+    </section>
+
+    <section class="card">
+      <h2>Legal</h2>
+      <div class="btn-row">
+        <a class="btn" href="conveyor-privacy.html">Privacy Policy</a>
+        <a class="btn" href="conveyor-terms.html">Terms of Use</a>
+      </div>
+    </section>
+
+    <footer>
+      © 2026 Berkay Berat Sönmez
+      <span class="dot">·</span> Conveyor Sort
+      <span class="dot">·</span> <a href="conveyor-privacy.html">Privacy</a>
+      <span class="dot">·</span> <a href="conveyor-terms.html">Terms</a>
+    </footer>
+  </div>
+</body>
+</html>
