@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Conveyor Sort — TikTok Publisher</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root {
+    --sky-1:#dff0ff; --sky-2:#f4fbff; --card:#fff; --ink:#1f2a37; --muted:#5b6b7b;
+    --line:#e6eef5; --blue:#1f7ac4; --gold:#f5c21a; --gold-deep:#d99b0a;
+    --red:#e74c3c; --green:#2ecc71; --amber:#f39c12;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:linear-gradient(180deg,var(--sky-1)0%,var(--sky-2)40%,#fff 100%);
+    line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:640px;margin:0 auto;padding:24px 18px 72px}
+  header.top{text-align:center;margin-bottom:8px}
+  header.top h1{font-size:1.55rem;letter-spacing:-.3px}
+  header.top .sub{color:var(--muted);font-size:.9rem;margin-top:2px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px;margin-top:16px;box-shadow:0 6px 20px rgba(31,42,55,.05)}
+  .card h2{font-size:1.05rem;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .req{font-size:.65rem;font-weight:700;color:#fff;background:var(--gold-deep);
+    border-radius:6px;padding:2px 6px;letter-spacing:.4px}
+  label{display:block;font-size:.92rem;margin:8px 0 4px}
+  .row{display:flex;align-items:center;gap:8px;padding:6px 0}
+  .row input[type=radio],.row input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue)}
+  .muted{color:var(--muted);font-size:.85rem}
+  .warn{color:var(--amber);font-size:.83rem;margin-top:4px}
+  .err{color:var(--red);font-size:.85rem}
+  .ok{color:var(--green)}
+  a{color:var(--blue);font-weight:600;text-decoration:none}
+  a:hover{text-decoration:underline}
+  button{font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);
+    background:#fff;color:var(--ink);padding:11px 18px;cursor:pointer}
+  button.primary{background:var(--gold);border-color:var(--gold-deep);color:#3a2c00}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--line);border:1px solid var(--line)}
+  .creator{display:flex;align-items:center;gap:14px}
+  .creator .nm{font-weight:700}
+  .clip{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+  .clip.sel{border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,122,196,.15)}
+  .clip .cap{white-space:pre-wrap;font-size:.82rem;color:var(--muted);margin-top:3px}
+  .banner{background:#fff7e0;border:1px solid #f0d98a;border-radius:10px;padding:10px 12px;font-size:.86rem;color:#6b5300}
+  .consent{background:#f1f7fc;border:1px solid #d7e8f5;border-radius:10px;padding:12px 14px;font-size:.86rem;margin:14px 0}
+  .summary{background:#f7fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.86rem}
+  .summary b{color:var(--ink)}
+  .hidden{display:none}
+  .result{margin-top:12px;font-size:.9rem;white-space:pre-wrap}
+  .divider{height:1px;background:var(--line);margin:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>📦 Conveyor Sort — TikTok Publisher</h1>
+    <div class="sub">Internal tool · connect your TikTok account to publish gameplay clips</div>
+  </header>
+
+  <!-- ═══ CONFIG — deploy sonrası doldur ═══ -->
+  <!-- WORKER_BASE = Cloudflare Worker kök URL'i (wrangler deploy çıktısı). -->
+  <!-- AUDIT_MODE = worker wrangler.toml [vars] AUDIT_MODE ile AYNI tutulmalı. -->
+
+  <div id="auditBanner" class="card banner hidden">
+    ⚠️ <b>Review mode.</b> While our TikTok app is in audit, every post is shared as
+    <b>Only me (private)</b> regardless of the visibility you pick below — the server enforces this.
+  </div>
+
+  <!-- 1) CONNECT ───────────────────────────────────────────────── -->
+  <section class="card" id="connectCard">
+    <h2>1 · Connect</h2>
+    <div id="connectPending">
+      <p class="muted">Connect your TikTok account to load your creator info and publish.</p>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="connectBtn">Continue with TikTok</button>
+        <button id="recheckBtn">I've connected — continue</button>
+      </div>
+      <p class="muted" id="connErr"></p>
+    </div>
+    <div id="connectDone" class="hidden"><span class="ok">✓ Connected.</span></div>
+  </section>
+
+  <div id="panel" class="hidden">
+    <!-- 2) CREATOR CARD (required) ─────────────────────────────── -->
+    <section class="card">
+      <h2>2 · Account <span class="req">REQUIRED</span></h2>
+      <div class="creator">
+        <img id="cAvatar" class="avatar" alt="" />
+        <div>
+          <div class="nm" id="cNick">—</div>
+          <div class="muted" id="cUser">—</div>
+          <div class="muted" id="cLimit"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3) CLIP SELECT ─────────────────────────────────────────── -->
+    <section class="card">
+      <h2>3 · Choose a clip</h2>
+      <div id="clipList"><p class="muted">Loading clips…</p></div>
+    </section>
+
+    <!-- 4) PRIVACY (required) ──────────────────────────────────── -->
+    <section class="card">
+      <h2>4 · Who can view this video <span class="req">REQUIRED</span></h2>
+      <div id="privacyList"></div>
+      <p class="muted" style="margin-top:6px">During the app review process, posts are shared as <b>Only me</b>.</p>
+    </section>
+
+    <!-- 5) INTERACTION TOGGLES (required) ──────────────────────── -->
+    <section class="card">
+      <h2>5 · Allow users to <span class="req">REQUIRED</span></h2>
+      <div class="row"><input type="checkbox" id="allowComment" checked /><label for="allowComment" style="margin:0">Comment</label></div>
+      <div class="row"><input type="checkbox" id="allowDuet" checked /><label for="allowDuet" style="margin:0">Duet</label></div>
+      <div class="row"><input type="checkbox" id="allowStitch" checked /><label for="allowStitch" style="margin:0">Stitch</label></div>
+      <p class="muted" id="interactNote"></p>
+    </section>
+
+    <!-- 6) COMMERCIAL DISCLOSURE (required) ────────────────────── -->
+    <section class="card">
+      <h2>6 · Disclose video content <span class="req">REQUIRED</span></h2>
+      <div class="row">
+        <input type="checkbox" id="disclose" />
+        <label for="disclose" style="margin:0">Disclose video content</label>
+      </div>
+      <p class="muted">Turn on if this video promotes a brand, product, or service. Off by default.</p>
+      <div id="brandBox" class="hidden">
+        <div class="divider"></div>
+        <div class="row"><input type="checkbox" id="brandOrganic" /><label for="brandOrganic" style="margin:0"><b>Your brand</b> — you are promoting yourself or your own business</label></div>
+        <div class="row"><input type="checkbox" id="brandContent" /><label for="brandContent" style="margin:0"><b>Branded content</b> — you are promoting another brand or a third party</label></div>
+        <p class="warn" id="brandNeed">Select at least one to disclose.</p>
+        <p class="warn hidden" id="brandContentPrivateWarn">Branded content visibility cannot be set to private.</p>
+        <p class="muted hidden" id="paidPartnership">Your video will be labeled as <b>“Paid partnership”</b>.</p>
+      </div>
+    </section>
+
+    <!-- 7) CONSENT + 8) PREVIEW/POST ───────────────────────────── -->
+    <section class="card">
+      <h2>7 · Review &amp; publish</h2>
+      <div class="summary" id="summary"></div>
+
+      <!-- 7 · CONSENT STATEMENT — verbatim, right above the publish button -->
+      <div class="consent" id="consent"></div>
+
+      <button class="primary" id="postBtn" disabled style="width:100%">Share to TikTok</button>
+      <div class="result" id="result"></div>
+    </section>
+  </div>
+
+  <p class="muted" style="text-align:center;margin-top:20px;font-size:.8rem">
+    Tokens never reach this page — they live only in the Worker. ·
+    <a href="conveyor-privacy.html">Privacy</a> · <a href="conveyor.html">Conveyor Sort</a>
+  </p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG — deploy sonrası doldur (Worker kök URL'i) + AUDIT_MODE'u toml ile eşitle.
+const WORKER_BASE = "https://conveyor-tiktok-panel.SUBDOMAIN.workers.dev"; // ← DEPLOY SONRASI DOLDUR
+const AUDIT_MODE  = true; // worker wrangler.toml [vars] AUDIT_MODE ile AYNI olmalı
+// ═══════════════════════════════════════════════════════════════════════════
+
+// TikTok resmi metin URL'leri (UX guidelines) — onay beyanındaki linkler.
+const URL_MUSIC = "https://www.tiktok.com/legal/page/global/music-usage-confirmation/en";
+const URL_BC    = "https://www.tiktok.com/legal/page/global/bc-policy/en";
+
+const PRIVACY_LABELS = {
+  PUBLIC_TO_EVERYONE: "Public",
+  MUTUAL_FOLLOW_FRIENDS: "Friends",
+  FOLLOWER_OF_CREATOR: "Followers",
+  SELF_ONLY: "Only me",
+};
+
+const $ = (id) => document.getElementById(id);
+let creator = null;   // creator_info
+let clips = [];       // /clips
+let selected = null;  // { tag, format, caption, durationSec }
+
+if (AUDIT_MODE) $("auditBanner").classList.remove("hidden");
+
+// ─── Connect ────────────────────────────────────────────────────────────────
+$("connectBtn").onclick = () => {
+  window.open(WORKER_BASE + "/auth/start", "tiktok_oauth", "width=620,height=820");
+};
+$("recheckBtn").onclick = checkConnection;
+
+async function api(path, opts) {
+  const res = await fetch(WORKER_BASE + path, opts);
+  const text = await res.text();
+  let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function checkConnection() {
+  $("connErr").textContent = "";
+  try {
+    const r = await api("/creator-info");
+    if (!r.ok) { $("connErr").textContent = "Not connected yet (" + r.status + "). Authorize, then click continue."; return; }
+    creator = r.data;
+    $("connectPending").classList.add("hidden");
+    $("connectDone").classList.remove("hidden");
+    $("panel").classList.remove("hidden");
+    renderCreator(); renderPrivacy(); renderInteractions();
+    loadClips();
+    wireDisclosure();
+    updateAll();
+  } catch (e) {
+    $("connErr").textContent = "Cannot reach the Worker. Check WORKER_BASE / deploy. (" + e + ")";
+  }
+}
+
+// ─── 2 · Creator card ───────────────────────────────────────────────────────
+function renderCreator() {
+  $("cNick").textContent = creator.creator_nickname || "TikTok creator";
+  $("cUser").textContent = creator.creator_username ? "@" + creator.creator_username : "";
+  if (creator.creator_avatar_url) $("cAvatar").src = creator.creator_avatar_url;
+  const max = creator.max_video_post_duration_sec;
+  $("cLimit").textContent = max ? ("Max video length: " + max + "s") : "";
+}
+
+// ─── 3 · Clips ──────────────────────────────────────────────────────────────
+async function loadClips() {
+  const r = await api("/clips");
+  if (!r.ok) { $("clipList").innerHTML = '<p class="err">Could not load clips (' + r.status + ').</p>'; return; }
+  clips = (r.data.clips || []);
+  if (!clips.length) { $("clipList").innerHTML = '<p class="muted">No clips found. Run the TikTok render workflow first.</p>'; return; }
+  $("clipList").innerHTML = "";
+  clips.forEach((c, i) => {
+    const el = document.createElement("div");
+    el.className = "clip";
+    el.innerHTML =
+      '<input type="radio" name="clip" value="' + i + '" style="margin-top:2px">' +
+      '<div><div><b>' + c.format + '</b> · ' + (c.durationSec != null ? c.durationSec + "s" : "?") +
+      ' <span class="muted">(' + c.tag + ')</span></div>' +
+      '<div class="cap">' + escapeHtml(c.caption || "") + '</div></div>';
+    el.querySelector("input").onchange = () => { selected = c; document.querySelectorAll(".clip").forEach(x => x.classList.remove("sel")); el.classList.add("sel"); updateAll(); };
+    el.onclick = (ev) => { if (ev.target.tagName !== "INPUT") el.querySelector("input").click(); };
+    $("clipList").appendChild(el);
+  });
+}
+
+// ─── 4 · Privacy (from privacy_level_options) ───────────────────────────────
+function renderPrivacy() {
+  const opts = creator.privacy_level_options || ["SELF_ONLY"];
+  const list = $("privacyList"); list.innerHTML = "";
+  opts.forEach((opt) => {
+    const row = document.createElement("div"); row.className = "row";
+    row.innerHTML = '<input type="radio" name="privacy" value="' + opt + '" id="pv_' + opt + '">' +
+      '<label for="pv_' + opt + '" style="margin:0">' + (PRIVACY_LABELS[opt] || opt) + '</label>';
+    row.querySelector("input").onchange = updateAll;
+    list.appendChild(row);
+  });
+  // Default = Only me (NOT public).
+  const def = opts.includes("SELF_ONLY") ? "SELF_ONLY" : opts[0];
+  const d = $("pv_" + def); if (d) d.checked = true;
+}
+function selectedPrivacy() {
+  const el = document.querySelector('input[name=privacy]:checked');
+  return el ? el.value : null;
+}
+
+// ─── 5 · Interaction toggles (account limits force-disable) ─────────────────
+function renderInteractions() {
+  const map = [["allowComment","comment_disabled"],["allowDuet","duet_disabled"],["allowStitch","stitch_disabled"]];
+  let anyOff = false;
+  map.forEach(([id, flag]) => {
+    if (creator[flag]) { $(id).checked = false; $(id).disabled = true; anyOff = true; }
+    $(id).onchange = updateAll;
+  });
+  $("interactNote").textContent = anyOff ? "Some interactions are turned off for your account and cannot be enabled here." : "";
+}
+
+// ─── 6 · Disclosure + branded-content ↔ privacy lock ────────────────────────
+function wireDisclosure() {
+  $("disclose").onchange = () => {
+    const on = $("disclose").checked;
+    $("brandBox").classList.toggle("hidden", !on);
+    if (!on) { $("brandOrganic").checked = false; $("brandContent").checked = false; }
+    updateAll();
+  };
+  $("brandOrganic").onchange = updateAll;
+  $("brandContent").onchange = updateAll;
+}
+
+function applyBrandPrivacyLock() {
+  const bc = $("brandContent");
+  const selfRadio = $("pv_SELF_ONLY");
+  const privacy = selectedPrivacy();
+  // (a) privacy = Only me → Branded content DISABLED + warning.
+  const privateSelected = privacy === "SELF_ONLY";
+  bc.disabled = privateSelected;
+  if (privateSelected && bc.checked) bc.checked = false;
+  $("brandContentPrivateWarn").classList.toggle("hidden", !privateSelected);
+  // (b) Branded content checked → remove "Only me" (disable that radio).
+  if (selfRadio) {
+    const lockSelf = bc.checked;
+    selfRadio.disabled = lockSelf;
+    if (lockSelf && selfRadio.checked) {
+      // Switch away from private to first non-private option.
+      const alt = Array.from(document.querySelectorAll('input[name=privacy]')).find(r => r.value !== "SELF_ONLY" && !r.disabled);
+      if (alt) alt.checked = true;
+    }
+  }
+  // (c) Paid partnership label when branded content on.
+  $("paidPartnership").classList.toggle("hidden", !bc.checked);
+}
+
+// ─── 7 · Consent statement (verbatim) ───────────────────────────────────────
+function renderConsent() {
+  const branded = $("brandContent").checked;
+  const music = '<a href="' + URL_MUSIC + '" target="_blank" rel="noopener">Music Usage Confirmation</a>';
+  const bc = '<a href="' + URL_BC + '" target="_blank" rel="noopener">Branded Content Policy</a>';
+  $("consent").innerHTML = branded
+    ? "By posting, you agree to TikTok's " + bc + " and " + music + "."
+    : "By posting, you agree to TikTok's " + music + ".";
+}
+
+// ─── Summary + gating ───────────────────────────────────────────────────────
+function updateAll() {
+  applyBrandPrivacyLock();
+  renderConsent();
+  renderSummary();
+  gatePostButton();
+}
+
+function renderSummary() {
+  const p = selectedPrivacy();
+  const parts = [];
+  parts.push("<b>Clip:</b> " + (selected ? selected.format + " (" + selected.tag + ")" : "—"));
+  parts.push("<b>Visibility:</b> " + (p ? (PRIVACY_LABELS[p] || p) : "—") + (AUDIT_MODE ? " → shared as Only me during review" : ""));
+  parts.push("<b>Comment/Duet/Stitch:</b> " +
+    ($("allowComment").checked ? "on" : "off") + " / " +
+    ($("allowDuet").checked ? "on" : "off") + " / " +
+    ($("allowStitch").checked ? "on" : "off"));
+  let disc = "off";
+  if ($("disclose").checked) {
+    const tags = [];
+    if ($("brandOrganic").checked) tags.push("Your brand");
+    if ($("brandContent").checked) tags.push("Branded content");
+    disc = tags.length ? tags.join(" + ") : "on (none selected)";
+  }
+  parts.push("<b>Disclosure:</b> " + disc);
+  $("summary").innerHTML = parts.join("<br>");
+}
+
+function gatePostButton() {
+  let ok = !!selected && !!selectedPrivacy();
+  if ($("disclose").checked && !$("brandOrganic").checked && !$("brandContent").checked) ok = false;
+  $("brandNeed").classList.toggle("hidden",
+    !($("disclose").checked && !$("brandOrganic").checked && !$("brandContent").checked));
+  $("postBtn").disabled = !ok;
+}
+
+// ─── 8 · Publish ────────────────────────────────────────────────────────────
+$("postBtn").onclick = async () => {
+  $("postBtn").disabled = true;
+  $("result").textContent = "Publishing…";
+  const payload = {
+    tag: selected.tag,
+    format: selected.format,
+    privacy: selectedPrivacy(),
+    disableComment: !$("allowComment").checked,
+    disableDuet: !$("allowDuet").checked,
+    disableStitch: !$("allowStitch").checked,
+    brandOrganicToggle: $("disclose").checked && $("brandOrganic").checked,
+    brandContentToggle: $("disclose").checked && $("brandContent").checked,
+  };
+  try {
+    const r = await api("/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (r.status === 202) {
+      $("result").innerHTML = '<span class="ok">Sent — TikTok is processing.</span> publish_id: ' + (r.data.publish_id || "?");
+    } else if (r.ok && r.data.published) {
+      $("result").innerHTML = '<span class="ok">✓ Published.</span> publish_id: ' + (r.data.publish_id || "?") + " · visibility: " + (r.data.privacy || "?");
+    } else if (r.status === 409) {
+      $("result").innerHTML = '<span class="warn">Skipped — already published recently (duplicate).</span>';
+    } else {
+      $("result").innerHTML = '<span class="err">Error ' + r.status + ': ' + escapeHtml(JSON.stringify(r.data)) + '</span>';
+    }
+  } catch (e) {
+    $("result").innerHTML = '<span class="err">Request failed: ' + escapeHtml(String(e)) + '</span>';
+  }
+  gatePostButton();
+};
+
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+// On load: try to detect an existing connection.
+checkConnection();
+</script>
+</body>
+</html>
