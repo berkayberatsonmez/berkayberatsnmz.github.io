@@ -42,13 +42,9 @@ a:hover { text-decoration: underline; }
 .brand:hover { text-decoration: none; }
 .brand .mark {
   width: 26px; height: 26px; border-radius: 7px;
-  background: linear-gradient(180deg, #ffe45c, var(--gold));
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45), 0 2px 0 var(--gold-deep);
-  position: relative; flex: none;
-}
-.brand .mark::after {
-  content: "★"; position: absolute; inset: 0; display: flex; align-items: center;
-  justify-content: center; font-size: 15px; color: #fffdf3; text-shadow: 0 1px 0 var(--gold-deep);
+  background: url("/conveyor-icon-180.png") center/cover no-repeat;
+  box-shadow: 0 1px 3px rgba(31,42,55,0.2);
+  flex: none;
 }
 nav.main { display: flex; flex-wrap: wrap; gap: 4px; }
 nav.main a {
